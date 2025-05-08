@@ -30,11 +30,10 @@ type Test struct {
 		Headers map[string]string `yaml:"headers,omitempty"`
 	} `yaml:"request"`
 	Expect struct {
-		Status     int               `yaml:"status"`
-		StatusCode int               `yaml:"status_code,omitempty"` // Alternative name
-		Body       string            `yaml:"body,omitempty"`
-		Headers    map[string]string `yaml:"headers,omitempty"`
-		JsonPath   []struct {
+		Status   int               `yaml:"status"`
+		Body     string            `yaml:"body,omitempty"`
+		Headers  map[string]string `yaml:"headers,omitempty"`
+		JsonPath []struct {
 			Path     string `yaml:"path"`
 			Equals   string `yaml:"equals,omitempty"`
 			Contains string `yaml:"contains,omitempty"`
