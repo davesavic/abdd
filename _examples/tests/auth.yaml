@@ -1,0 +1,21 @@
+tests:
+  - name: Register account
+    description: Test the registration of a new user
+    fake:
+      username: "{username}"
+      password: "{password}"
+    request:
+      method: POST
+      url: /register
+      body: |
+        {
+          "username": "${username}",
+          "password": "${password}"
+        }
+    expect:
+      status: 201
+    extract:
+      - path: username
+        as: user_id
+      - path: access_token
+        as: access_token

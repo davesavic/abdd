@@ -1,0 +1,7 @@
+global:
+  config:
+    base_url: https://jsonplaceholder.typicode.com
+    headers:
+      Content-Type: application/json
+      Authorization: Bearer ${TOKEN}
+    timeout: 30

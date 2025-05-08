@@ -1,0 +1,17 @@
+tests:
+  - name: Create new business
+    description: Test the creation of a new business
+    fake:
+      name: "{businessname}"
+    request:
+      method: POST
+      url: /businesses
+      body: |
+        {
+          "name": "${name}"
+        }
+    expect:
+      status: 201
+    extract:
+      - path: id
+        as: business_id
