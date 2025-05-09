@@ -26,6 +26,7 @@ var runCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Loaded %d tests\n", len(a.Tests))
+		fmt.Printf("Loaded config: %+v\n", a.Global)
 	},
 }
 

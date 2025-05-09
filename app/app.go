@@ -9,14 +9,19 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-type Abdd struct {
-	GlobalConfig struct {
-		BaseURL string            `yaml:"base_url"`
-		Headers map[string]string `yaml:"headers"`
-		Timeout int               `yaml:"timeout"`
-	} `yaml:"global"`
+type Config struct {
+	BaseURL string            `yaml:"base_url"`
+	Headers map[string]string `yaml:"headers"`
+	Timeout int               `yaml:"timeout"`
+}
 
-	Tests []Test `yaml:"-"`
+type Global struct {
+	Config Config `yaml:"config"`
+}
+
+type Abdd struct {
+	Global Global `yaml:"global"`
+	Tests  []Test `yaml:"-"`
 }
 
 type Test struct {
@@ -89,7 +94,7 @@ func New(args AbddArgs) (*Abdd, error) {
 	a := &Abdd{}
 
 	// Load the global config from the specified file
-	err = a.LoadGlobalConfig(args.ConfigFile)
+	err = a.LoadGlobal(args.ConfigFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load global config: %w", err)
 	}
@@ -103,15 +108,17 @@ func New(args AbddArgs) (*Abdd, error) {
 	return a, nil
 }
 
-func (a *Abdd) LoadGlobalConfig(path string) error {
+func (a *Abdd) LoadGlobal(path string) error {
 	f, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	if err := yaml.Unmarshal(f, &a.GlobalConfig); err != nil {
+	var abdd Abdd
+	if err := yaml.Unmarshal(f, &abdd); err != nil {
 		return fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
+	a.Global = abdd.Global
 	return nil
 }
 
@@ -140,6 +147,5 @@ func (a *Abdd) LoadTests(folders []string) error {
 		a.Tests = append(a.Tests, testFile.Tests...)
 	}
 
-	fmt.Printf("Loaded %d tests from %d files\n", len(a.Tests), len(allFiles))
 	return nil
 }
