@@ -1,6 +1,8 @@
 tests:
   - name: Create new business
     description: Test the creation of a new business
+    depends:
+      - Register account
     fake:
       name: "{businessname}"
     request:

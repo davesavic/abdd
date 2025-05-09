@@ -7,6 +7,7 @@ import (
 
 	"github.com/davesavic/abdd/app"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAbddArgsValidate(t *testing.T) {
@@ -220,17 +221,22 @@ global:
 
 func TestLoadTests(t *testing.T) {
 	tempDir := t.TempDir()
-	testFolder1 := filepath.Join(tempDir, "tests1")
-	testFolder2 := filepath.Join(tempDir, "tests2")
 
-	err := os.Mkdir(testFolder1, 0o755)
-	assert.NoError(t, err)
+	tests := []struct {
+		name        string
+		setup       func() []string
+		wantTests   int
+		wantErr     bool
+		validate    func(t *testing.T, tests []app.Test)
+		validateErr func(t *testing.T, err error)
+	}{
+		{
+			name: "Single folder",
+			setup: func() []string {
+				folder := filepath.Join(tempDir, "tests1")
+				assert.NoError(t, os.Mkdir(folder, 0o755))
 
-	err = os.Mkdir(testFolder2, 0o755)
-	assert.NoError(t, err)
-
-	// Create test files in folder1
-	test1Content := `tests:
+				content := `tests:
 - name: Test1
   description: First test
   request:
@@ -239,11 +245,33 @@ func TestLoadTests(t *testing.T) {
   expect:
     status: 200`
 
-	err = os.WriteFile(filepath.Join(testFolder1, "test1.yaml"), []byte(test1Content), 0o644)
-	assert.NoError(t, err)
+				assert.NoError(t, os.WriteFile(filepath.Join(folder, "test1.yaml"), []byte(content), 0o644))
+				return []string{folder}
+			},
+			wantTests: 1,
+			validate: func(t *testing.T, tests []app.Test) {
+				assert.Equal(t, "Test1", tests[0].Name)
+				assert.Equal(t, "GET", tests[0].Request.Method)
+			},
+		},
+		{
+			name: "Multiple folders",
+			setup: func() []string {
+				folder1 := filepath.Join(tempDir, "multi1")
+				folder2 := filepath.Join(tempDir, "multi2")
+				require.NoError(t, os.Mkdir(folder1, 0o755))
+				require.NoError(t, os.Mkdir(folder2, 0o755))
 
-	// Create test files in folder2
-	test2Content := `tests:
+				content1 := `tests:
+- name: Test1
+  description: First test
+  request:
+    method: GET
+    url: /api/resource1
+  expect:
+    status: 200`
+
+				content2 := `tests:
 - name: Test2
   description: Second test
   request:
@@ -260,73 +288,239 @@ func TestLoadTests(t *testing.T) {
   expect:
     status: 204`
 
-	err = os.WriteFile(filepath.Join(testFolder2, "test2.yaml"), []byte(test2Content), 0o644)
-	assert.NoError(t, err)
-
-	tests := []struct {
-		name      string
-		folders   []string
-		wantTests int
-		wantErr   bool
-	}{
-		{
-			name:      "Single folder",
-			folders:   []string{testFolder1},
-			wantTests: 1,
-			wantErr:   false,
-		},
-		{
-			name:      "Multiple folders",
-			folders:   []string{testFolder1, testFolder2},
+				require.NoError(t, os.WriteFile(filepath.Join(folder1, "test1.yaml"), []byte(content1), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(folder2, "test2.yaml"), []byte(content2), 0o644))
+				return []string{folder1, folder2}
+			},
 			wantTests: 3,
-			wantErr:   false,
+			validate: func(t *testing.T, tests []app.Test) {
+				names := make(map[string]bool)
+				for _, test := range tests {
+					names[test.Name] = true
+				}
+				assert.True(t, names["Test1"])
+				assert.True(t, names["Test2"])
+				assert.True(t, names["Test3"])
+			},
 		},
 		{
-			name:      "Invalid test file",
-			folders:   []string{testFolder2},
+			name: "Invalid test file",
+			setup: func() []string {
+				folder := filepath.Join(tempDir, "invalid")
+				require.NoError(t, os.Mkdir(folder, 0o755))
+
+				validContent := `tests:
+- name: Test2
+  description: Second test
+  request:
+    method: POST
+    url: /api/resource2
+  expect:
+    status: 201`
+
+				invalidContent := `invalid: yaml: :`
+
+				require.NoError(t, os.WriteFile(filepath.Join(folder, "valid.yaml"), []byte(validContent), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(folder, "invalid.yaml"), []byte(invalidContent), 0o644))
+				return []string{folder}
+			},
 			wantTests: 0,
 			wantErr:   true,
 		},
 		{
-			name:      "Non-existent folder",
-			folders:   []string{filepath.Join(tempDir, "nonexistent")},
+			name: "Non-existent folder",
+			setup: func() []string {
+				return []string{filepath.Join(tempDir, "nonexistent")}
+			},
 			wantTests: 0,
 			wantErr:   false,
+		},
+		{
+			name: "yaml and yml files",
+			setup: func() []string {
+				folder1 := filepath.Join(tempDir, "yml1")
+				folder2 := filepath.Join(tempDir, "yml2")
+				require.NoError(t, os.Mkdir(folder1, 0o755))
+				require.NoError(t, os.Mkdir(folder2, 0o755))
+
+				content1 := `tests:
+- name: Test1
+  description: First test
+  request:
+    method: GET
+    url: /api/resource1
+  expect:
+    status: 200`
+
+				content2 := `tests:
+- name: Test4
+  description: Fourth test
+  request:
+    method: GET
+    url: /api/resource4
+  expect:
+    status: 200`
+
+				require.NoError(t, os.WriteFile(filepath.Join(folder1, "test1.yaml"), []byte(content1), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(folder2, "test4.yaml"), []byte(content2), 0o644))
+				return []string{folder1, folder2}
+			},
+			wantTests: 2,
+		},
+		{
+			name: "ordered by dependency",
+			setup: func() []string {
+				folder := filepath.Join(tempDir, "ordered")
+				require.NoError(t, os.Mkdir(folder, 0o755))
+
+				content := `tests:
+  - name: Test1
+    description: First test
+    depends:
+      - Test2
+    request:
+      method: GET
+      url: /api/resource1
+    expect:
+      status: 200
+  - name: Test2
+    description: Second test
+    request:
+      method: POST
+      url: /api/resource2
+      body: '{"key": "value"}'
+    expect:
+      status: 201
+  - name: Test3
+    description: Third test
+    depends:
+      - Test1
+    request:
+      method: DELETE
+      url: /api/resource3
+    expect:
+      status: 204`
+
+				assert.NoError(t, os.WriteFile(filepath.Join(folder, "ordered.yaml"), []byte(content), 0o644))
+				return []string{folder}
+			},
+			wantTests: 3,
+			validate: func(t *testing.T, tests []app.Test) {
+				assert.Equal(t, "Test2", tests[0].Name)
+				assert.Equal(t, "Test1", tests[1].Name)
+				assert.Equal(t, "Test3", tests[2].Name)
+			},
+		},
+		{
+			name: "circular dependency",
+			setup: func() []string {
+				folder := filepath.Join(tempDir, "circular")
+				require.NoError(t, os.Mkdir(folder, 0o755))
+
+				content := `tests:
+  - name: Test1
+    description: First test
+    depends:
+      - Test2
+    request:
+      method: GET
+      url: /api/resource1
+    expect:
+      status: 200
+  - name: Test2
+    description: Second test
+    depends:
+      - Test1
+    request:
+      method: POST
+      url: /api/resource2
+      body: '{"key": "value"}'
+    expect:
+      status: 201
+  - name: Test3
+    description: Third test
+    depends:
+      - Test1
+    request:
+      method: DELETE
+      url: /api/resource3
+    expect:
+      status: 204`
+
+				assert.NoError(t, os.WriteFile(filepath.Join(folder, "circular.yaml"), []byte(content), 0o644))
+				return []string{folder}
+			},
+			wantErr: true,
+			validateErr: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "circular dependency detected")
+			},
+		},
+		{
+			name: "missing dependency",
+			setup: func() []string {
+				folder := filepath.Join(tempDir, "missing")
+				require.NoError(t, os.Mkdir(folder, 0o755))
+
+				content := `tests:
+  - name: Test1
+    description: First test
+    depends:
+      - Test2
+    request:
+      method: GET
+      url: /api/resource1
+    expect:
+      status: 200
+  - name: Test2
+    description: Second test
+    depends:
+      - Test100
+    request:
+      method: POST
+      url: /api/resource2
+      body: '{"key": "value"}'
+    expect:
+      status: 201
+  - name: Test3
+    description: Third test
+    depends:
+      - Test1
+    request:
+      method: DELETE
+      url: /api/resource3
+    expect:
+      status: 204`
+
+				assert.NoError(t, os.WriteFile(filepath.Join(folder, "missing.yaml"), []byte(content), 0o644))
+				return []string{folder}
+			},
+			wantErr: true,
+			validateErr: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "test 'Test2' depends on non-existent test 'Test100'")
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Only create invalid file for the test that expects it
-			if tt.name == "Invalid test file" {
-				invalidTestContent := `invalid: yaml: :`
-				err = os.WriteFile(filepath.Join(testFolder2, "invalid.yaml"), []byte(invalidTestContent), 0o644)
-				assert.NoError(t, err)
-				defer os.Remove(filepath.Join(testFolder2, "invalid.yaml"))
-			}
+			folders := tt.setup()
 
 			a := &app.Abdd{}
-			err := a.LoadTests(tt.folders)
+			err := a.LoadTests(folders, "")
 
 			if tt.wantErr {
 				assert.Error(t, err)
+				if tt.validateErr != nil {
+					tt.validateErr(t, err)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, a.Tests, tt.wantTests)
 
-				if tt.wantTests > 0 && len(a.Tests) > 0 {
-					if tt.folders[0] == testFolder1 && len(tt.folders) == 1 {
-						assert.Equal(t, "Test1", a.Tests[0].Name)
-						assert.Equal(t, "GET", a.Tests[0].Request.Method)
-					} else if len(tt.folders) > 1 {
-						testNames := make(map[string]bool)
-						for _, test := range a.Tests {
-							testNames[test.Name] = true
-						}
-						assert.True(t, testNames["Test1"])
-						assert.True(t, testNames["Test2"])
-						assert.True(t, testNames["Test3"])
-					}
+				if tt.validate != nil && tt.wantTests > 0 {
+					tt.validate(t, a.Tests)
 				}
 			}
 		})
