@@ -7,6 +7,8 @@ import (
 )
 
 func (a *Abdd) GenerateFakeData(t *Test) error {
+	fmt.Println("Generating fake data...")
+
 	if t.Fake == nil {
 		return nil
 	}

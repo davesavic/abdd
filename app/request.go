@@ -9,12 +9,14 @@ import (
 )
 
 func (a *Abdd) MakeRequest(t *Test) error {
+	fmt.Println("Making request...")
+
 	var payload *bytes.Buffer
 	if t.Request.Body != nil {
 		payload = bytes.NewBufferString(*t.Request.Body)
 	}
 
-	req, err := http.NewRequest(t.Request.Method, t.Request.URL, payload)
+	req, err := http.NewRequest(t.Request.Method, a.Global.Config.BaseURL+t.Request.URL, payload)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -41,11 +43,12 @@ func (a *Abdd) MakeRequest(t *Test) error {
 	}
 
 	respBody := string(bodyBytes)
-	*a.LastResponse = LastResponse{
+	lr := LastResponse{
 		Headers: respHeaders,
 		Body:    &respBody,
 		Code:    &resp.StatusCode,
 	}
+	a.LastResponse = &lr
 
 	return nil
 }

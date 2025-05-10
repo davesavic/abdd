@@ -7,6 +7,8 @@ import (
 )
 
 func (a *Abdd) ValidateResponse(t *Test) error {
+	fmt.Println("Validating response...")
+
 	if a.LastResponse == nil {
 		return fmt.Errorf("no response to validate")
 	}

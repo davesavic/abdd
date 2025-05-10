@@ -14,9 +14,15 @@ var runCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		folders, err := cmd.Flags().GetStringSlice("folders")
+		if err != nil {
+			cmd.PrintErrf("Error: %v\n", err)
+			return
+		}
+
 		a, err := app.New(app.AbddArgs{
-			ConfigFile: "./_examples/abdd.yaml",
-			Folders:    []string{"./_examples/tests"},
+			ConfigFile: cmd.Flag("config").Value.String(),
+			Folders:    folders,
 		})
 		if err != nil {
 			cmd.PrintErrf("Error: %v\n", err)
@@ -34,6 +40,7 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 
+	runCmd.Flags().StringSliceP("folders", "f", []string{}, "Folders to run tests from")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command

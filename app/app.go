@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/goccy/go-yaml"
 )
@@ -121,13 +122,18 @@ func New(args AbddArgs) (*Abdd, error) {
 
 	// Create a new Abdd instance
 	a := &Abdd{
-		Store: make(map[string]any),
+		Store:  make(map[string]any),
+		Client: http.DefaultClient,
 	}
 
 	// Load the global config from the specified file
 	err = a.LoadGlobal(args.ConfigFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load global config: %w", err)
+	}
+
+	if a.Global.Config.Timeout != 0 {
+		a.Client.Timeout = time.Duration(a.Global.Config.Timeout) * time.Second
 	}
 
 	// Load tests from the specified folders
@@ -150,6 +156,9 @@ func (a *Abdd) LoadGlobal(path string) error {
 		return fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
 	a.Global = abdd.Global
+
+	fmt.Printf("Loaded global config: %+v\n", a.Global)
+
 	return nil
 }
 
@@ -247,6 +256,9 @@ func (a *Abdd) LoadTests(folders []string, exclude string) error {
 	}
 
 	a.Tests = sorted
+
+	fmt.Printf("Loaded tests: %d\n", len(a.Tests))
+
 	return nil
 }
 
