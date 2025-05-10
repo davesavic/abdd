@@ -3,16 +3,29 @@ package app
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
 )
 
+var (
+	ErrUnexpectedStatusCode        = errors.New("unexpected status code")
+	ErrHeaderNotFound              = errors.New("header not found")
+	ErrHeaderNotEqual              = errors.New("header not equal")
+	ErrJsonPathNotFound            = errors.New("json path not found")
+	ErrJsonPathNotEqual            = errors.New("json path not equal")
+	ErrExtractionPathEmpty         = errors.New("extraction path is empty")
+	ErrExtractionVariableNameEmpty = errors.New("extraction variable name is empty")
+	ErrExtractionPathNotFound      = errors.New("extraction path not found")
+)
+
 type Config struct {
-	BaseURL string            `yaml:"base_url"`
-	Headers map[string]string `yaml:"headers"`
-	Timeout int               `yaml:"timeout"`
+	BaseURL     string            `yaml:"base_url"`
+	Headers     map[string]string `yaml:"headers"`
+	Timeout     int               `yaml:"timeout"`
+	StopOnError bool              `yaml:"stop_on_error"`
 }
 
 type Global struct {
@@ -22,6 +35,38 @@ type Global struct {
 type Abdd struct {
 	Global Global `yaml:"global"`
 	Tests  []Test `yaml:"-"`
+
+	Store        map[string]any `yaml:"-"`
+	LastResponse *LastResponse  `yaml:"-"`
+	Client       *http.Client   `yaml:"-"`
+}
+
+type LastResponse struct {
+	Body    *string
+	Code    *int
+	Headers map[string]string
+}
+
+type TestRequest struct {
+	Method  string            `yaml:"method"`
+	URL     string            `yaml:"url"`
+	Body    *string           `yaml:"body,omitempty"`
+	Headers map[string]string `yaml:"headers,omitempty"`
+}
+
+type TestCommand struct {
+	Command string `yaml:"command"`
+}
+
+type TestExpect struct {
+	Headers map[string]string `yaml:"headers,omitempty"`
+	Status  *int              `yaml:"status,omitempty"`
+	Json    map[string]any    `yaml:"json,omitempty"`
+}
+
+type TestExtract struct {
+	Path string `yaml:"path"`
+	As   string `yaml:"as"`
 }
 
 type Test struct {
@@ -29,26 +74,10 @@ type Test struct {
 	Description string            `yaml:"description"`
 	Depends     []string          `yaml:"depends,omitempty"`
 	Fake        map[string]string `yaml:"fake,omitempty"`
-	Request     struct {
-		Method  string            `yaml:"method"`
-		URL     string            `yaml:"url"`
-		Body    string            `yaml:"body,omitempty"`
-		Headers map[string]string `yaml:"headers,omitempty"`
-	} `yaml:"request"`
-	Expect struct {
-		Status   int               `yaml:"status"`
-		Body     string            `yaml:"body,omitempty"`
-		Headers  map[string]string `yaml:"headers,omitempty"`
-		JsonPath []struct {
-			Path     string `yaml:"path"`
-			Equals   string `yaml:"equals,omitempty"`
-			Contains string `yaml:"contains,omitempty"`
-		} `yaml:"json_path,omitempty"`
-	} `yaml:"expect"`
-	Extract []struct {
-		Path string `yaml:"path"`
-		As   string `yaml:"as"`
-	} `yaml:"extract,omitempty"`
+	Request     *TestRequest      `yaml:"request,omitempty"`
+	Command     *TestCommand      `yaml:"command,omitempty"`
+	Expect      TestExpect        `yaml:"expect"`
+	Extract     []TestExtract     `yaml:"extract,omitempty"`
 }
 
 type AbddArgs struct {
@@ -91,7 +120,9 @@ func New(args AbddArgs) (*Abdd, error) {
 	}
 
 	// Create a new Abdd instance
-	a := &Abdd{}
+	a := &Abdd{
+		Store: make(map[string]any),
+	}
 
 	// Load the global config from the specified file
 	err = a.LoadGlobal(args.ConfigFile)
@@ -216,5 +247,54 @@ func (a *Abdd) LoadTests(folders []string, exclude string) error {
 	}
 
 	a.Tests = sorted
+	return nil
+}
+
+func (a *Abdd) Run() error {
+	// Logic to run the tests
+	for _, test := range a.Tests {
+		err := a.GenerateFakeData(&test)
+		if err != nil {
+			if a.Global.Config.StopOnError {
+				return fmt.Errorf("error in test '%s': %w", test.Name, err)
+			}
+			continue
+		}
+
+		err = a.ReplaceVariables(&test)
+		if err != nil {
+			if a.Global.Config.StopOnError {
+				return fmt.Errorf("error in test '%s': %w", test.Name, err)
+			}
+			continue
+		}
+
+		err = a.MakeRequest(&test)
+		if err != nil {
+			if a.Global.Config.StopOnError {
+				return fmt.Errorf("error in test '%s': %w", test.Name, err)
+			}
+			continue
+		}
+
+		err = a.ValidateResponse(&test)
+		if err != nil {
+			if a.Global.Config.StopOnError {
+				return fmt.Errorf("error in test '%s': %w", test.Name, err)
+			}
+			continue
+		}
+
+		err = a.ExtractData(&test)
+		if err != nil {
+			if a.Global.Config.StopOnError {
+				return fmt.Errorf("error in test '%s': %w", test.Name, err)
+			}
+			continue
+		}
+
+		// Print the test result
+	}
+
 	return nil
 }

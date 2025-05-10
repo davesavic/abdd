@@ -5,7 +5,13 @@ go 1.24.0
 require github.com/stretchr/testify v1.10.0
 
 require (
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
+)
+
+require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/brianvoe/gofakeit/v7 v7.2.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
@@ -21,6 +27,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tidwall/gjson v1.18.0
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect

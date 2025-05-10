@@ -4,8 +4,6 @@ Copyright © 2025 Dave Savic
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/davesavic/abdd/app"
 	"github.com/spf13/cobra"
 )
@@ -25,8 +23,11 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("Loaded %d tests\n", len(a.Tests))
-		fmt.Printf("Loaded config: %+v\n", a.Global)
+		err = a.Run()
+		if err != nil {
+			cmd.PrintErrf("Error: %v\n", err)
+			return
+		}
 	},
 }
 
