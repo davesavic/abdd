@@ -15,31 +15,31 @@ func (a *Abdd) ReplaceVariables(t *Test) error {
 	if t.Request != nil {
 		headers := map[string]string{}
 		for key, value := range t.Request.Headers {
-			headers[key] = a.ReplaceVariablesInText(value)
+			headers[key] = a.replaceVariablesInText(value)
 		}
 
 		var body *string
 		if t.Request.Body != nil {
-			bodyValue := a.ReplaceVariablesInText(*t.Request.Body)
+			bodyValue := a.replaceVariablesInText(*t.Request.Body)
 			body = &bodyValue
 		}
 
 		t.Request = &TestRequest{
 			Method:  t.Request.Method,
-			URL:     a.ReplaceVariablesInText(t.Request.URL),
+			URL:     a.replaceVariablesInText(t.Request.URL),
 			Body:    body,
 			Headers: headers,
 		}
 	}
 
 	if t.Command != nil {
-		t.Command.Command = a.ReplaceVariablesInText(t.Command.Command)
+		t.Command.Command = a.replaceVariablesInText(t.Command.Command)
 	}
 
 	if t.Expect.Headers != nil {
 		headers := map[string]string{}
 		for key, value := range t.Expect.Headers {
-			headers[key] = a.ReplaceVariablesInText(value)
+			headers[key] = a.replaceVariablesInText(value)
 		}
 		t.Expect.Headers = headers
 	}
@@ -47,7 +47,7 @@ func (a *Abdd) ReplaceVariables(t *Test) error {
 	if t.Expect.Json != nil {
 		json := map[string]any{}
 		for key, value := range t.Expect.Json {
-			json[key] = a.ReplaceVariablesInText(fmt.Sprintf("%v", value))
+			json[key] = a.replaceVariablesInText(fmt.Sprintf("%v", value))
 		}
 		t.Expect.Json = json
 	}
@@ -55,7 +55,7 @@ func (a *Abdd) ReplaceVariables(t *Test) error {
 	return nil
 }
 
-func (a *Abdd) ReplaceVariablesInText(text string) string {
+func (a *Abdd) replaceVariablesInText(text string) string {
 	r := regexp.MustCompile(`\${([^}]+)}`)
 	return r.ReplaceAllStringFunc(text, func(match string) string {
 		// Extract key name without ${ and }

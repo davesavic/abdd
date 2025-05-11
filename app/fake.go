@@ -31,5 +31,3 @@ func generateFromTag(tag string) (string, error) {
 
 	return fmt.Sprintf("%v", result), nil
 }
-
-// func (a *Abdd)
