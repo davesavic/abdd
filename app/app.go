@@ -272,7 +272,7 @@ func (a *Abdd) LoadTests(folders []string, exclude string) error {
 
 func (a *Abdd) Run() error {
 	fmt.Println(headerText("┌─────────────────────────────────┐"))
-	fmt.Println(headerText("            Running Tests          "))
+	fmt.Println(headerText("               Tests               "))
 
 	totalTests := len(a.Tests)
 	passedTests := 0
@@ -340,9 +340,8 @@ func (a *Abdd) Run() error {
 	fmt.Println()
 	fmt.Println(headerText("└─────────────────────────────────┘"))
 
-	fmt.Println()
 	fmt.Println(headerText("┌─────────────────────────────────┐"))
-	fmt.Println(headerText("            Test Summary           "))
+	fmt.Println(headerText("              Summary              "))
 
 	totalStr := fmt.Sprintf("Total: %d", totalTests)
 	passedStr := fmt.Sprintf("%s: %d", successText("Passed"), passedTests)
