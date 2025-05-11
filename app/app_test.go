@@ -1,8 +1,11 @@
 package app_test
 
 import (
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/davesavic/abdd/app"
@@ -11,7 +14,6 @@ import (
 )
 
 func TestAbddArgsValidate(t *testing.T) {
-	// Create temporary test directories and files
 	tempDir := t.TempDir()
 	configFile := filepath.Join(tempDir, "config.yaml")
 	testFolder := filepath.Join(tempDir, "tests")
@@ -89,13 +91,11 @@ func TestAbddArgsValidate(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	// Create temporary test directories and files
 	tempDir := t.TempDir()
 	configFile := filepath.Join(tempDir, "config.yaml")
 	testFolder := filepath.Join(tempDir, "tests")
 	testFile := filepath.Join(testFolder, "test1.yaml")
 
-	// Create config file
 	configContent := `
 global:
   config:
@@ -107,7 +107,6 @@ global:
 	err := os.WriteFile(configFile, []byte(configContent), 0o644)
 	assert.NoError(t, err)
 
-	// Create test folder and test file
 	err = os.Mkdir(testFolder, 0o755)
 	assert.NoError(t, err)
 
@@ -159,12 +158,10 @@ global:
 }
 
 func TestLoadGlobal(t *testing.T) {
-	// Create temporary test directory and config file
 	tempDir := t.TempDir()
 	configFile := filepath.Join(tempDir, "config.yaml")
 	invalidConfigFile := filepath.Join(tempDir, "invalid.yaml")
 
-	// Create valid config file
 	validConfig := `
 global:
   config:
@@ -176,7 +173,6 @@ global:
 	err := os.WriteFile(configFile, []byte(validConfig), 0o644)
 	assert.NoError(t, err)
 
-	// Create invalid config file
 	invalidConfig := `invalid: yaml: :`
 	err = os.WriteFile(invalidConfigFile, []byte(invalidConfig), 0o644)
 	assert.NoError(t, err)
@@ -525,4 +521,53 @@ func TestLoadTests(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRun(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader(`{"id": 1, "name": "John Doe"}`)),
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+	}
+
+	test := &app.Test{
+		Name: "Test1",
+		Request: &app.TestRequest{
+			Method:  "GET",
+			URL:     "/api/users",
+			Headers: map[string]string{"Accept": "application/json"},
+		},
+		Expect: app.TestExpect{
+			Status: toPointer(200),
+		},
+		Extract: []app.TestExtract{
+			{Path: "id", As: "userId"},
+			{Path: "name", As: "userName"},
+		},
+	}
+
+	a := app.Abdd{
+		Global: app.Global{
+			Config: app.Config{
+				BaseURL: "https://example.com",
+			},
+		},
+		Tests: []app.Test{*test},
+		Store: map[string]any{},
+		Client: &http.Client{
+			Transport: &app.TestMockRoundTripper{Response: resp},
+		},
+	}
+
+	err := a.Run()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(a.Tests))
+	assert.Equal(t, 200, *a.LastResponse.Code)
+	assert.Equal(t, "application/json", a.LastResponse.Headers["Content-Type"])
+	assert.Equal(t, "{\"id\": 1, \"name\": \"John Doe\"}", *a.LastResponse.Body)
+	assert.Equal(t, "Test1", a.Tests[0].Name)
+	assert.Equal(t, "GET", a.Tests[0].Request.Method)
+	assert.Equal(t, "/api/users", a.Tests[0].Request.URL)
+	assert.Equal(t, "application/json", a.Tests[0].Request.Headers["Accept"])
+	assert.Equal(t, 2, len(a.Store))
 }

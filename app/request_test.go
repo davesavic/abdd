@@ -11,15 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockRoundTripper struct {
-	response *http.Response
-	err      error
-}
-
-func (m *mockRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
-	return m.response, m.err
-}
-
 func TestMakeRequest(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -43,7 +34,7 @@ func TestMakeRequest(t *testing.T) {
 				}
 
 				a.Client = &http.Client{
-					Transport: &mockRoundTripper{response: resp},
+					Transport: &app.TestMockRoundTripper{Response: resp},
 				}
 
 				test.Request = &app.TestRequest{
@@ -105,7 +96,7 @@ func TestMakeRequest(t *testing.T) {
 				}
 
 				a.Client = &http.Client{
-					Transport: &mockRoundTripper{err: http.ErrHandlerTimeout},
+					Transport: &app.TestMockRoundTripper{Err: http.ErrHandlerTimeout},
 				}
 
 				test.Request = &app.TestRequest{
@@ -154,7 +145,7 @@ func TestMakeRequest(t *testing.T) {
 				}
 
 				a.Client = &http.Client{
-					Transport: &mockRoundTripper{response: resp},
+					Transport: &app.TestMockRoundTripper{Response: resp},
 				}
 
 				test.Request = &app.TestRequest{
@@ -188,7 +179,7 @@ func TestMakeRequest(t *testing.T) {
 				}
 
 				a.Client = &http.Client{
-					Transport: &mockRoundTripper{response: resp},
+					Transport: &app.TestMockRoundTripper{Response: resp},
 				}
 
 				test.Request = &app.TestRequest{
@@ -222,7 +213,7 @@ func TestMakeRequest(t *testing.T) {
 				}
 
 				a.Client = &http.Client{
-					Transport: &mockRoundTripper{response: resp},
+					Transport: &app.TestMockRoundTripper{Response: resp},
 				}
 
 				test.Request = &app.TestRequest{
@@ -257,7 +248,7 @@ func TestMakeRequest(t *testing.T) {
 				}
 
 				a.Client = &http.Client{
-					Transport: &mockRoundTripper{response: resp},
+					Transport: &app.TestMockRoundTripper{Response: resp},
 				}
 
 				test.Request = &app.TestRequest{
