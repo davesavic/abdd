@@ -6,8 +6,6 @@ import (
 )
 
 func (a *Abdd) ReplaceVariables(t *Test) error {
-	fmt.Println("Replacing variables...")
-
 	if t == nil {
 		return fmt.Errorf("test cannot be nil")
 	}

@@ -49,7 +49,7 @@ func TestValidateResponse(t *testing.T) {
 			lastResponse: &app.LastResponse{
 				Code: toPointer(404),
 			},
-			expectedErr: fmt.Errorf("w%: expected %d, got %d", app.ErrUnexpectedStatusCode, 200, 404),
+			expectedErr: fmt.Errorf("%w: expected %d, got %d", app.ErrUnexpectedStatusCode, 200, 404),
 		},
 		{
 			name: "Header not found",
@@ -61,7 +61,7 @@ func TestValidateResponse(t *testing.T) {
 				},
 			},
 			lastResponse: &app.LastResponse{},
-			expectedErr:  fmt.Errorf("w%: expected %s to be present", app.ErrHeaderNotFound, "Content-Type"),
+			expectedErr:  fmt.Errorf("%w: expected %s to be present", app.ErrHeaderNotFound, "Content-Type"),
 		},
 		{
 			name: "Header mismatch",
@@ -77,7 +77,7 @@ func TestValidateResponse(t *testing.T) {
 					"Content-Type": "text/html",
 				},
 			},
-			expectedErr: fmt.Errorf("w%: expected header %s to be %s, got %s", app.ErrHeaderNotEqual, "Content-Type", "application/json", "text/html"),
+			expectedErr: fmt.Errorf("%w: expected header %s to be %s, got %s", app.ErrHeaderNotEqual, "Content-Type", "application/json", "text/html"),
 		},
 		{
 			name: "JSON path not found",
@@ -91,7 +91,7 @@ func TestValidateResponse(t *testing.T) {
 			lastResponse: &app.LastResponse{
 				Body: toPointer(`{"other_key": "other_value"}`),
 			},
-			expectedErr: fmt.Errorf("w%: expected %s to be present", app.ErrJsonPathNotFound, "key"),
+			expectedErr: fmt.Errorf("%w: expected %s to be present", app.ErrJsonPathNotFound, "key"),
 		},
 		{
 			name: "JSON value mismatch",
@@ -105,7 +105,7 @@ func TestValidateResponse(t *testing.T) {
 			lastResponse: &app.LastResponse{
 				Body: toPointer(`{"key": "other_value"}`),
 			},
-			expectedErr: fmt.Errorf("w%: expected %s to be %v, got %v", app.ErrJsonPathNotEqual, "key", "value", "other_value"),
+			expectedErr: fmt.Errorf("%w: expected %s to be %v, got %v", app.ErrJsonPathNotEqual, "key", "value", "other_value"),
 		},
 	}
 

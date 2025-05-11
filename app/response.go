@@ -7,15 +7,13 @@ import (
 )
 
 func (a *Abdd) ValidateResponse(t *Test) error {
-	fmt.Println("Validating response...")
-
 	if a.LastResponse == nil {
 		return fmt.Errorf("no response to validate")
 	}
 
 	if t.Expect.Status != nil && a.LastResponse.Code != nil {
 		if *a.LastResponse.Code != *t.Expect.Status {
-			return fmt.Errorf("w%: expected %d, got %d", ErrUnexpectedStatusCode, *t.Expect.Status, *a.LastResponse.Code)
+			return fmt.Errorf("%w: expected %d, got %d", ErrUnexpectedStatusCode, *t.Expect.Status, *a.LastResponse.Code)
 		}
 	}
 
@@ -23,10 +21,10 @@ func (a *Abdd) ValidateResponse(t *Test) error {
 		for key, expectedValue := range t.Expect.Headers {
 			actualValue, exists := a.LastResponse.Headers[key]
 			if !exists {
-				return fmt.Errorf("w%: expected %s to be present", ErrHeaderNotFound, key)
+				return fmt.Errorf("%w: expected %s to be present", ErrHeaderNotFound, key)
 			}
 			if actualValue != expectedValue {
-				return fmt.Errorf("w%: expected header %s to be %s, got %s", ErrHeaderNotEqual, key, expectedValue, actualValue)
+				return fmt.Errorf("%w: expected header %s to be %s, got %s", ErrHeaderNotEqual, key, expectedValue, actualValue)
 			}
 		}
 	}
@@ -35,10 +33,10 @@ func (a *Abdd) ValidateResponse(t *Test) error {
 		for key, expectedValue := range t.Expect.Json {
 			actualValue := gjson.Get(*a.LastResponse.Body, key)
 			if !actualValue.Exists() {
-				return fmt.Errorf("w%: expected %s to be present", ErrJsonPathNotFound, key)
+				return fmt.Errorf("%w: expected %s to be present", ErrJsonPathNotFound, key)
 			}
 			if actualValue.String() != fmt.Sprintf("%v", expectedValue) {
-				return fmt.Errorf("w%: expected %s to be %v, got %v", ErrJsonPathNotEqual, key, expectedValue, actualValue.String())
+				return fmt.Errorf("%w: expected %s to be %v, got %v", ErrJsonPathNotEqual, key, expectedValue, actualValue.String())
 			}
 		}
 	}

@@ -45,7 +45,7 @@ func TestExtractData(t *testing.T) {
 			lastResponse: &app.LastResponse{
 				Body: toPointer(`{"key": "value"}`),
 			},
-			expectedErr: fmt.Errorf("w%: expected %s to be present", app.ErrExtractionPathNotFound, "nonexistentKey"),
+			expectedErr: fmt.Errorf("%w: expected %s to be present", app.ErrExtractionPathNotFound, "nonexistentKey"),
 		},
 		{
 			name: "Empty extraction path",
@@ -60,7 +60,7 @@ func TestExtractData(t *testing.T) {
 			lastResponse: &app.LastResponse{
 				Body: toPointer(`{"key": "value"}`),
 			},
-			expectedErr: fmt.Errorf("w%: extraction path cannot be empty", app.ErrExtractionPathNotFound),
+			expectedErr: fmt.Errorf("%w: extraction path cannot be empty", app.ErrExtractionPathNotFound),
 		},
 		{
 			name: "Empty variable name",
@@ -75,7 +75,7 @@ func TestExtractData(t *testing.T) {
 			lastResponse: &app.LastResponse{
 				Body: toPointer(`{"key": "value"}`),
 			},
-			expectedErr: fmt.Errorf("w%: extraction variable name cannot be empty", app.ErrExtractionVariableNameEmpty),
+			expectedErr: fmt.Errorf("%w: extraction variable name cannot be empty", app.ErrExtractionVariableNameEmpty),
 		},
 	}
 

@@ -9,8 +9,6 @@ import (
 )
 
 func (a *Abdd) MakeRequest(t *Test) error {
-	fmt.Println("Making request...")
-
 	var payload *bytes.Buffer
 	if t.Request.Body != nil {
 		payload = bytes.NewBufferString(*t.Request.Body)

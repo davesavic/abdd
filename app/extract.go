@@ -7,8 +7,6 @@ import (
 )
 
 func (a *Abdd) ExtractData(t *Test) error {
-	fmt.Println("Extracting data...")
-
 	if a.LastResponse == nil {
 		return fmt.Errorf("no response to extract data from")
 	}
@@ -19,15 +17,15 @@ func (a *Abdd) ExtractData(t *Test) error {
 
 	for _, ex := range t.Extract {
 		if ex.Path == "" {
-			return fmt.Errorf("w%: extraction path cannot be empty", ErrExtractionPathNotFound)
+			return fmt.Errorf("%w: extraction path cannot be empty", ErrExtractionPathNotFound)
 		}
 		if ex.As == "" {
-			return fmt.Errorf("w%: extraction variable name cannot be empty", ErrExtractionVariableNameEmpty)
+			return fmt.Errorf("%w: extraction variable name cannot be empty", ErrExtractionVariableNameEmpty)
 		}
 
 		value := gjson.Get(*a.LastResponse.Body, ex.Path)
 		if !value.Exists() {
-			return fmt.Errorf("w%: expected %s to be present", ErrExtractionPathNotFound, ex.Path)
+			return fmt.Errorf("%w: expected %s to be present", ErrExtractionPathNotFound, ex.Path)
 		}
 
 		switch value.Type {

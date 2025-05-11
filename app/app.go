@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/goccy/go-yaml"
 )
 
@@ -22,11 +23,19 @@ var (
 	ErrExtractionPathNotFound      = errors.New("extraction path not found")
 )
 
+var (
+	successText = color.New(color.FgGreen, color.Bold).SprintFunc()
+	failureText = color.New(color.FgRed, color.Bold).SprintFunc()
+	headerText  = color.New(color.FgCyan).SprintFunc()
+	infoText    = color.New(color.FgYellow).SprintFunc()
+)
+
 type Config struct {
 	BaseURL     string            `yaml:"base_url"`
 	Headers     map[string]string `yaml:"headers"`
 	Timeout     int               `yaml:"timeout"`
 	StopOnError bool              `yaml:"stop_on_error"`
+	Verbose     bool              `yaml:"verbose"`
 }
 
 type Global struct {
@@ -84,6 +93,7 @@ type Test struct {
 type AbddArgs struct {
 	ConfigFile string
 	Folders    []string
+	Verbose    bool
 }
 
 func (args *AbddArgs) Validate() error {
@@ -136,6 +146,10 @@ func New(args AbddArgs) (*Abdd, error) {
 		a.Client.Timeout = time.Duration(a.Global.Config.Timeout) * time.Second
 	}
 
+	if args.Verbose {
+		a.Global.Config.Verbose = true
+	}
+
 	// Load tests from the specified folders
 	err = a.LoadTests(args.Folders, args.ConfigFile)
 	if err != nil {
@@ -156,9 +170,6 @@ func (a *Abdd) LoadGlobal(path string) error {
 		return fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
 	a.Global = abdd.Global
-
-	fmt.Printf("Loaded global config: %+v\n", a.Global)
-
 	return nil
 }
 
@@ -256,56 +267,98 @@ func (a *Abdd) LoadTests(folders []string, exclude string) error {
 	}
 
 	a.Tests = sorted
-
-	fmt.Printf("Loaded tests: %d\n", len(a.Tests))
-
 	return nil
 }
 
 func (a *Abdd) Run() error {
-	// Logic to run the tests
-	for _, test := range a.Tests {
-		err := a.GenerateFakeData(&test)
-		if err != nil {
-			if a.Global.Config.StopOnError {
-				return fmt.Errorf("error in test '%s': %w", test.Name, err)
+	fmt.Println(headerText("┌─────────────────────────────────┐"))
+	fmt.Println(headerText("            Running Tests          "))
+
+	totalTests := len(a.Tests)
+	passedTests := 0
+	failedTests := 0
+
+	for i, test := range a.Tests {
+		if a.Global.Config.Verbose {
+			fmt.Printf("\n%s %s\n", infoText("▶"), test.Name)
+			fmt.Printf("  %s: %s\n", infoText("Description"), test.Description)
+		}
+
+		var err error
+
+		err = a.GenerateFakeData(&test)
+		if err == nil {
+			if a.Global.Config.Verbose {
+				fmt.Printf("  %s Generated fake data\n", infoText("•"))
 			}
+			err = a.ReplaceVariables(&test)
+		}
+
+		if err == nil {
+			if a.Global.Config.Verbose {
+				fmt.Printf("  %s Replaced variables\n", infoText("•"))
+			}
+			err = a.MakeRequest(&test)
+		}
+
+		if err == nil {
+			if a.Global.Config.Verbose {
+				fmt.Printf("  %s Made request\n", infoText("•"))
+			}
+			err = a.ValidateResponse(&test)
+		}
+
+		if err == nil {
+			if a.Global.Config.Verbose {
+				fmt.Printf("  %s Validated response\n", infoText("•"))
+			}
+			err = a.ExtractData(&test)
+		}
+
+		if err == nil {
+			if a.Global.Config.Verbose {
+				fmt.Printf("  %s Extracted data\n", infoText("•"))
+			}
+		}
+
+		if err == nil {
+			passedTests++
+
+			fmt.Printf("[%d/%d] %s %s\n", i+1, totalTests, successText("✓"), test.Name)
 			continue
 		}
 
-		err = a.ReplaceVariables(&test)
-		if err != nil {
-			if a.Global.Config.StopOnError {
-				return fmt.Errorf("error in test '%s': %w", test.Name, err)
-			}
-			continue
-		}
+		failedTests++
+		fmt.Printf("[%d/%d] %s %s\n", i+1, totalTests, failureText("✗"), test.Name)
+		fmt.Printf("       %s %v\n", failureText("→"), err)
 
-		err = a.MakeRequest(&test)
-		if err != nil {
-			if a.Global.Config.StopOnError {
-				return fmt.Errorf("error in test '%s': %w", test.Name, err)
-			}
-			continue
+		if a.Global.Config.StopOnError {
+			break
 		}
+	}
 
-		err = a.ValidateResponse(&test)
-		if err != nil {
-			if a.Global.Config.StopOnError {
-				return fmt.Errorf("error in test '%s': %w", test.Name, err)
-			}
-			continue
-		}
+	fmt.Println()
+	fmt.Println(headerText("└─────────────────────────────────┘"))
 
-		err = a.ExtractData(&test)
-		if err != nil {
-			if a.Global.Config.StopOnError {
-				return fmt.Errorf("error in test '%s': %w", test.Name, err)
-			}
-			continue
-		}
+	fmt.Println()
+	fmt.Println(headerText("┌─────────────────────────────────┐"))
+	fmt.Println(headerText("            Test Summary           "))
 
-		// Print the test result
+	totalStr := fmt.Sprintf("Total: %d", totalTests)
+	passedStr := fmt.Sprintf("%s: %d", successText("Passed"), passedTests)
+	failedStr := fmt.Sprintf("%s: %d", failureText("Failed"), failedTests)
+	rateStr := fmt.Sprintf("Pass rate: %.1f%%", float64(passedTests)/float64(totalTests)*100)
+
+	fmt.Println(totalStr)
+	fmt.Println(passedStr)
+	fmt.Println(failedStr)
+	fmt.Println(rateStr)
+
+	fmt.Println()
+	fmt.Println(headerText("└─────────────────────────────────┘"))
+
+	if failedTests > 0 && !a.Global.Config.StopOnError {
+		return fmt.Errorf(failureText("%d tests failed"), failedTests)
 	}
 
 	return nil

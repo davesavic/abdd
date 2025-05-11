@@ -4,3 +4,4 @@ global:
     headers:
       Content-Type: application/json
     timeout: 30
+    verbose: false

@@ -22,6 +22,7 @@ var runCmd = &cobra.Command{
 
 		a, err := app.New(app.AbddArgs{
 			ConfigFile: cmd.Flag("config").Value.String(),
+			Verbose:    cmd.Flag("verbose").Value.String() == "true",
 			Folders:    folders,
 		})
 		if err != nil {
@@ -41,6 +42,7 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 
 	runCmd.Flags().StringSliceP("folders", "f", []string{}, "Folders to run tests from")
+	runCmd.Flags().BoolP("verbose", "v", false, "Enable verbose output")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
