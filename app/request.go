@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,12 +8,12 @@ import (
 )
 
 func (a *Abdd) MakeRequest(t *Test) error {
-	var payload *bytes.Buffer
+	var bodyReader io.Reader
 	if t.Request.Body != nil {
-		payload = bytes.NewBufferString(*t.Request.Body)
+		bodyReader = strings.NewReader(*t.Request.Body)
 	}
 
-	req, err := http.NewRequest(t.Request.Method, a.Global.Config.BaseURL+t.Request.URL, payload)
+	req, err := http.NewRequest(t.Request.Method, a.Global.Config.BaseURL+t.Request.URL, bodyReader)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
