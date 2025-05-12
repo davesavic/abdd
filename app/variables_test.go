@@ -111,6 +111,21 @@ func TestReplaceVariables(t *testing.T) {
 				assert.Equal(t, "test must have either a request or a command", err.Error())
 			},
 		},
+		{
+			name: "Variables in command and command directory",
+			setup: func(a *app.Abdd, test *app.Test) {
+				a.Store["customerEmail"] = "bilbo@gmail.com"
+				test.Command = &app.TestCommand{
+					Command:   "echo ${customerEmail}",
+					Directory: "/home/${customerEmail}/projects",
+				}
+			},
+			expects: func(a app.Abdd, test *app.Test, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, "echo bilbo@gmail.com", test.Command.Command)
+				assert.Equal(t, "/home/bilbo@gmail.com/projects", test.Command.Directory)
+			},
+		},
 	}
 
 	for _, tc := range testCases {

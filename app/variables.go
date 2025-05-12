@@ -12,6 +12,14 @@ func (a *Abdd) ReplaceVariables(t *Test) error {
 	if t.Request == nil && t.Command == nil {
 		return fmt.Errorf("test must have either a request or a command")
 	}
+
+	if t.Command != nil {
+		if t.Command.Directory != "" {
+			t.Command.Directory = a.replaceVariablesInText(t.Command.Directory)
+		}
+		t.Command.Command = a.replaceVariablesInText(t.Command.Command)
+	}
+
 	if t.Request != nil {
 		headers := map[string]string{}
 		for key, value := range t.Request.Headers {

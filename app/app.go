@@ -65,7 +65,9 @@ type TestRequest struct {
 }
 
 type TestCommand struct {
-	Command string `yaml:"command"`
+	Command   string `yaml:"command"`
+	Directory string `yaml:"directory,omitempty"`
+	As        string `yaml:"as,omitempty"`
 }
 
 type TestExpect struct {
@@ -297,6 +299,13 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Replaced variables\n", infoText("•"))
+			}
+			err = a.ExecuteCommand(&test)
+		}
+
+		if err == nil {
+			if a.Global.Config.Verbose {
+				fmt.Printf("  %s Executed command\n", infoText("•"))
 			}
 			err = a.MakeRequest(&test)
 		}

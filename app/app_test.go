@@ -537,6 +537,10 @@ func TestRun(t *testing.T) {
 			URL:     "/api/users",
 			Headers: map[string]string{"Accept": "application/json"},
 		},
+		Command: &app.TestCommand{
+			Command: "echo Hello World",
+			As:      "echoCommand",
+		},
 		Expect: app.TestExpect{
 			Status: toPointer(200),
 		},
@@ -562,12 +566,14 @@ func TestRun(t *testing.T) {
 	err := a.Run()
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(a.Tests))
+	assert.NotNil(t, a.LastResponse.Body)
 	assert.Equal(t, 200, *a.LastResponse.Code)
 	assert.Equal(t, "application/json", a.LastResponse.Headers["Content-Type"])
 	assert.Equal(t, "{\"id\": 1, \"name\": \"John Doe\"}", *a.LastResponse.Body)
+	assert.Equal(t, "Hello World", a.Store["echoCommand"])
 	assert.Equal(t, "Test1", a.Tests[0].Name)
 	assert.Equal(t, "GET", a.Tests[0].Request.Method)
 	assert.Equal(t, "/api/users", a.Tests[0].Request.URL)
 	assert.Equal(t, "application/json", a.Tests[0].Request.Headers["Accept"])
-	assert.Equal(t, 2, len(a.Store))
+	assert.Equal(t, 3, len(a.Store))
 }
