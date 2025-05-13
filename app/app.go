@@ -282,58 +282,49 @@ func (a *Abdd) Run() error {
 
 	for i, test := range a.Tests {
 		if a.Global.Config.Verbose {
-			fmt.Printf("\n%s %s\n", infoText("▶"), test.Name)
-			fmt.Printf("  %s: %s\n", infoText("Description"), test.Description)
+			a.PrintStartTest(&test)
 		}
 
 		var err error
-
 		err = a.GenerateFakeData(&test)
 		if err == nil {
 			if a.Global.Config.Verbose {
-				fmt.Printf("  %s Generated fake data\n", infoText("•"))
-				fmt.Printf("  %s: %+v\n", infoText("Fake"), test.Fake)
+				a.PrintGenerateFakeDataStep(&test)
 			}
 			err = a.ReplaceVariables(&test)
 		}
 
 		if err == nil {
 			if a.Global.Config.Verbose {
-				fmt.Printf("  %s Replaced variables\n", infoText("•"))
-				fmt.Printf("  %s: %+v\n", infoText("Request"), test.Request)
+				a.PrintReplaceVariablesStep(&test)
 			}
 			err = a.ExecuteCommand(&test)
 		}
 
 		if err == nil {
 			if a.Global.Config.Verbose {
-				fmt.Printf("  %s Executed command\n", infoText("•"))
-				fmt.Printf("  %s: %+v\n", infoText("Command"), test.Command)
+				a.PrintExecuteCommandStep(&test)
 			}
 			err = a.MakeRequest(&test)
 		}
 
 		if err == nil {
 			if a.Global.Config.Verbose {
-				fmt.Printf("  %s Made request\n", infoText("•"))
-				fmt.Printf("  %s: [%s]%s %+v %+v\n", infoText("Request"), test.Request.Method, test.Request.URL, *test.Request.Body, test.Request.Headers)
-				fmt.Printf("  %s: %+v\n", infoText("Store"), a.Store)
+				a.PrintMakeRequestStep(&test)
 			}
 			err = a.ValidateResponse(&test)
 		}
 
 		if err == nil {
 			if a.Global.Config.Verbose {
-				fmt.Printf("  %s Validated response\n", infoText("•"))
-				fmt.Printf("  %s: %+v\n", infoText("Response"), a.LastResponse)
+				a.PrintValidateResponseStep(&test)
 			}
 			err = a.ExtractData(&test)
 		}
 
 		if err == nil {
 			if a.Global.Config.Verbose {
-				fmt.Printf("  %s Extracted data\n", infoText("•"))
-				fmt.Printf("  %s: %+v\n", infoText("Extracted"), a.Store)
+				a.PrintExtractDataStep(&test)
 			}
 		}
 
@@ -347,6 +338,8 @@ func (a *Abdd) Run() error {
 		failedTests++
 		fmt.Printf("[%d/%d] %s %s\n", i+1, totalTests, failureText("✗"), test.Name)
 		fmt.Printf("       %s %v\n", failureText("→"), err)
+
+		a.PrintFailureDetails(&test)
 
 		if a.Global.Config.StopOnError {
 			break
