@@ -37,7 +37,11 @@ func (a *Abdd) ExecuteCommand(t *Test) error {
 	}
 
 	if t.Command.As != "" {
-		a.Store[t.Command.As] = strings.TrimSpace(stdout.String())
+		a.Store[t.Command.As] = strings.Trim(stdout.String(), "\n")
+		err = a.ReplaceVariables(t)
+		if err != nil {
+			return fmt.Errorf("failed to replace variables: %w", err)
+		}
 	}
 	return nil
 }

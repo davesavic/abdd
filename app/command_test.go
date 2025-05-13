@@ -59,6 +59,25 @@ func TestExecuteCommand(t *testing.T) {
 				assert.Equal(t, "Hellooooo there", a.Store["greeting"])
 			},
 		},
+		{
+			name: "Saving command output triggering variable replacement",
+			setup: func(a *app.Abdd, test *app.Test) {
+				test.Command = &app.TestCommand{
+					Command: "echo Hello from temp directory",
+					As:      "greeting",
+				}
+				test.Expect = app.TestExpect{
+					Json: map[string]any{
+						"greeting": "${greeting}",
+					},
+				}
+			},
+			expects: func(a app.Abdd, test *app.Test, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, "Hello from temp directory", a.Store["greeting"])
+				assert.Equal(t, map[string]any{"greeting": "Hello from temp directory"}, test.Expect.Json)
+			},
+		},
 	}
 
 	for _, tc := range testCases {

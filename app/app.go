@@ -292,6 +292,7 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Generated fake data\n", infoText("•"))
+				fmt.Printf("  %s: %+v\n", infoText("Fake"), test.Fake)
 			}
 			err = a.ReplaceVariables(&test)
 		}
@@ -299,6 +300,7 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Replaced variables\n", infoText("•"))
+				fmt.Printf("  %s: %+v\n", infoText("Request"), test.Request)
 			}
 			err = a.ExecuteCommand(&test)
 		}
@@ -306,6 +308,7 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Executed command\n", infoText("•"))
+				fmt.Printf("  %s: %+v\n", infoText("Command"), test.Command)
 			}
 			err = a.MakeRequest(&test)
 		}
@@ -313,6 +316,8 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Made request\n", infoText("•"))
+				fmt.Printf("  %s: [%s]%s %+v %+v\n", infoText("Request"), test.Request.Method, test.Request.URL, *test.Request.Body, test.Request.Headers)
+				fmt.Printf("  %s: %+v\n", infoText("Store"), a.Store)
 			}
 			err = a.ValidateResponse(&test)
 		}
@@ -320,6 +325,7 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Validated response\n", infoText("•"))
+				fmt.Printf("  %s: %+v\n", infoText("Response"), a.LastResponse)
 			}
 			err = a.ExtractData(&test)
 		}
@@ -327,6 +333,7 @@ func (a *Abdd) Run() error {
 		if err == nil {
 			if a.Global.Config.Verbose {
 				fmt.Printf("  %s Extracted data\n", infoText("•"))
+				fmt.Printf("  %s: %+v\n", infoText("Extracted"), a.Store)
 			}
 		}
 

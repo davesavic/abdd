@@ -40,10 +40,6 @@ func (a *Abdd) ReplaceVariables(t *Test) error {
 		}
 	}
 
-	if t.Command != nil {
-		t.Command.Command = a.replaceVariablesInText(t.Command.Command)
-	}
-
 	if t.Expect.Headers != nil {
 		headers := map[string]string{}
 		for key, value := range t.Expect.Headers {
