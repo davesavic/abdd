@@ -359,7 +359,9 @@ func (a *Abdd) Run() error {
 
 	fmt.Println(totalStr)
 	fmt.Println(passedStr)
-	fmt.Println(failedStr)
+	if failedTests > 0 {
+		fmt.Println(failedStr)
+	}
 	fmt.Println(rateStr)
 
 	fmt.Println()
