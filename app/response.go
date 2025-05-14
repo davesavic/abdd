@@ -36,15 +36,18 @@ func (a *Abdd) ValidateResponse(t *Test) error {
 				return fmt.Errorf("%w: expected %s to be present", ErrJsonPathNotFound, key)
 			}
 
-			if actualValue.Type == gjson.Null {
-				if expectedValue == nil {
-					continue
-				}
+			isActualNull := actualValue.Type == gjson.Null
+			// Hack to check if the expected value is nil or "<nil>"
+			isExpectedNull := expectedValue == nil || expectedValue == "<nil>"
+			if isActualNull && isExpectedNull {
+				continue
+			}
 
+			if isActualNull {
 				return fmt.Errorf("%w: expected %s to be %v, got null", ErrJsonPathNotEqual, key, expectedValue)
 			}
 
-			if expectedValue == nil {
+			if isExpectedNull {
 				return fmt.Errorf("%w: expected %s to be null, got %s", ErrJsonPathNotEqual, key, actualValue.String())
 			}
 
