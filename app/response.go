@@ -35,6 +35,19 @@ func (a *Abdd) ValidateResponse(t *Test) error {
 			if !actualValue.Exists() {
 				return fmt.Errorf("%w: expected %s to be present", ErrJsonPathNotFound, key)
 			}
+
+			if actualValue.Type == gjson.Null {
+				if expectedValue == nil {
+					continue
+				}
+
+				return fmt.Errorf("%w: expected %s to be %v, got null", ErrJsonPathNotEqual, key, expectedValue)
+			}
+
+			if expectedValue == nil {
+				return fmt.Errorf("%w: expected %s to be null, got %s", ErrJsonPathNotEqual, key, actualValue.String())
+			}
+
 			if actualValue.String() != fmt.Sprintf("%v", expectedValue) {
 				return fmt.Errorf("%w: expected %s to be %v, got %v", ErrJsonPathNotEqual, key, expectedValue, actualValue.String())
 			}

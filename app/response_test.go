@@ -107,6 +107,48 @@ func TestValidateResponse(t *testing.T) {
 			},
 			expectedErr: fmt.Errorf("%w: expected %s to be %v, got %v", app.ErrJsonPathNotEqual, "key", "value", "other_value"),
 		},
+		{
+			name: "JSON value is null when not expected",
+			test: app.Test{
+				Expect: app.TestExpect{
+					Json: map[string]any{
+						"key": "value",
+					},
+				},
+			},
+			lastResponse: &app.LastResponse{
+				Body: toPointer(`{"key": null}`),
+			},
+			expectedErr: fmt.Errorf("%w: expected %s to be %s, got null", app.ErrJsonPathNotEqual, "key", "value"),
+		},
+		{
+			name: "JSON value is not null when expected",
+			test: app.Test{
+				Expect: app.TestExpect{
+					Json: map[string]any{
+						"key": nil,
+					},
+				},
+			},
+			lastResponse: &app.LastResponse{
+				Body: toPointer(`{"key": "value"}`),
+			},
+			expectedErr: fmt.Errorf("%w: expected %s to be null, got %v", app.ErrJsonPathNotEqual, "key", "value"),
+		},
+		{
+			name: "JSON value is null when expected",
+			test: app.Test{
+				Expect: app.TestExpect{
+					Json: map[string]any{
+						"key": nil,
+					},
+				},
+			},
+			lastResponse: &app.LastResponse{
+				Body: toPointer(`{"key": null}`),
+			},
+			expectedErr: fmt.Errorf("%w: expected %s to be %v, got null", app.ErrJsonPathNotEqual, "key", nil),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -118,7 +160,7 @@ func TestValidateResponse(t *testing.T) {
 
 			err := a.ValidateResponse(&a.Tests[0])
 			if err != nil && err.Error() != tc.expectedErr.Error() {
-				t.Errorf("expected error %v, got %v", tc.expectedErr, err)
+				t.Errorf("expected error '%v', got '%v'", tc.expectedErr, err)
 			}
 		})
 	}
