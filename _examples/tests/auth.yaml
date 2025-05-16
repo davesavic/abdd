@@ -4,6 +4,10 @@ tests:
     fake:
       username: "{username}"
       password: "{password}"
+    command:
+      command: echo Registering user with username ${username}
+      # directory: path to the directory where the command will be executed
+      # as: save output with a specific name
     request:
       method: POST
       url: /register

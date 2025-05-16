@@ -1,6 +1,6 @@
 global:
   config:
-    base_url: https://jsonplaceholder.typicode.com
+    base_url: https://api.example.com/v1
     headers:
       Content-Type: application/json
     timeout: 30

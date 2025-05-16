@@ -6,6 +6,8 @@ tests:
     fake:
       name: "{businessname}"
     request:
+      headers:
+        Authorization: Bearer ${access_token}
       method: POST
       url: /businesses
       body: |
