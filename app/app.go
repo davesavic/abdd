@@ -335,11 +335,11 @@ func (a *Abdd) Run() error {
 			continue
 		}
 
+		a.PrintFailureDetails(&test)
+
 		failedTests++
 		fmt.Printf("[%d/%d] %s %s\n", i+1, totalTests, failureText("✗"), test.Name)
 		fmt.Printf("       %s %v\n", failureText("→"), err)
-
-		a.PrintFailureDetails(&test)
 
 		if a.Global.Config.StopOnError {
 			break
