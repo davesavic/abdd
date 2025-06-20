@@ -7,6 +7,9 @@
 ```bash
 go install github.com/davesavic/abdd@latest
 ```
+or
+
+Download the latest release from [GitHub](https://github.com/davesavic/abdd/releases).
 
 ### Usage
 
